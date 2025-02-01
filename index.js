@@ -90,7 +90,7 @@ bot.action(["ua", "pl"], async (ctx) => {
   ctx.reply(t(selectedLanguage, "nameAndSurnameQuestion"));
 });
 
-bot.command("language", async (ctx) => {
+bot.command("refresh", async (ctx) => {
   const userId = ctx.from.id;
   const languageKeyboard = {
     reply_markup: {
@@ -113,6 +113,202 @@ bot.command("language", async (ctx) => {
   ctx.reply(
     t(userLanguages[userId] || "pl", "chooseLanguage"),
     languageKeyboard
+  );
+});
+
+bot.command("edit", async (ctx) => {
+  const userId = ctx.from.id;
+  const user = await User.findOne({ telegramId: userId });
+
+  if (user) {
+    const editKeyboard = {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            {
+              text: t(user.language || "pl", "editName"),
+              callback_data: "edit_name",
+            },
+            {
+              text: t(user.language || "pl", "editGender"),
+              callback_data: "edit_gender",
+            },
+          ],
+          [
+            {
+              text: t(user.language || "pl", "editAge"),
+              callback_data: "edit_age",
+            },
+            {
+              text: t(user.language || "pl", "editCity"),
+              callback_data: "edit_city",
+            },
+          ],
+          [
+            {
+              text: t(user.language || "pl", "editVoivodeship"),
+              callback_data: "edit_voivodeship",
+            },
+            {
+              text: t(user.language || "pl", "editProfessions"),
+              callback_data: "edit_professions",
+            },
+          ],
+          [
+            {
+              text: t(user.language || "pl", "editSalary"),
+              callback_data: "edit_salary",
+            },
+            {
+              text: t(user.language || "pl", "editPhone"),
+              callback_data: "edit_phone",
+            },
+          ],
+          [
+            {
+              text: t(user.language || "pl", "editEmail"),
+              callback_data: "edit_email",
+            },
+            {
+              text: t(user.language || "pl", "editPhoto"),
+              callback_data: "edit_photo",
+            },
+          ],
+        ],
+      },
+    };
+    ctx.reply(t(user.language || "pl", "chooseEdit"), editKeyboard);
+  } else {
+    ctx.reply(t("pl", "profile_not_found"));
+  }
+});
+
+bot.action(/^edit_(.+)$/, async (ctx) => {
+  const userId = ctx.from.id;
+  const user = await User.findOne({ telegramId: userId });
+  const fieldToEdit = ctx.match[1];
+
+  if (user) {
+    switch (fieldToEdit) {
+      case "name":
+        ctx.reply(t(user.language || "pl", "nameAndSurnameQuestion"));
+        userAnswers[userId] = { fieldToEdit: "fullName" };
+        break;
+      case "gender":
+        askGender(ctx, userId);
+        userAnswers[userId] = { fieldToEdit: "gender" };
+        break;
+      case "age":
+        ctx.reply(t(user.language || "pl", "ageQuestion"));
+        userAnswers[userId] = { fieldToEdit: "age" };
+        break;
+      case "city":
+        ctx.reply(t(user.language || "pl", "cityQuestion"));
+        userAnswers[userId] = { fieldToEdit: "city" };
+        break;
+      case "voivodeship":
+        askVoivodeship(ctx, userId);
+        userAnswers[userId] = { fieldToEdit: "voivodeship" };
+        break;
+      case "professions":
+        ctx.reply(t(user.language || "pl", "professionsQuestion"));
+        userAnswers[userId] = { fieldToEdit: "professions" };
+        break;
+      case "salary":
+        ctx.reply(t(user.language || "pl", "expectedSalaryQuestion"));
+        userAnswers[userId] = { fieldToEdit: "expectedSalary" };
+        break;
+      case "phone":
+        ctx.reply(t(user.language || "pl", "phoneQuestion"));
+        userAnswers[userId] = { fieldToEdit: "phone" };
+        break;
+      case "email":
+        ctx.reply(t(user.language || "pl", "emailQuestion"));
+        userAnswers[userId] = { fieldToEdit: "email" };
+        break;
+      case "photo":
+        ctx.reply(t(user.language || "pl", "photoQuestion"));
+        userAnswers[userId] = { fieldToEdit: "photo" };
+        break;
+    }
+  } else {
+    ctx.reply(t("pl", "profile_not_found"));
+  }
+});
+
+bot.command("profile", async (ctx) => {
+  const userId = ctx.from.id;
+  const user = await User.findOne({ telegramId: userId });
+
+  if (user) {
+    await displayUserProfile(user, userId, ctx);
+  } else {
+    ctx.reply(t("pl", "profile_not_found") || "Profile not found");
+  }
+});
+
+bot.command("delete", async (ctx) => {
+  const userId = ctx.from.id;
+  const user = await User.findOne({ telegramId: userId });
+
+  if (user) {
+    const confirmationKeyboard = {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            {
+              text:
+                t(user.language || "pl", "confirmDelete") || "Confirm Delete",
+              callback_data: "confirm_delete",
+            },
+          ],
+          [
+            {
+              text: t(user.language || "pl", "cancel") || "Cancel",
+              callback_data: "cancel_delete",
+            },
+          ],
+        ],
+      },
+    };
+    ctx.reply(
+      t(user.language || "pl", "deleteConfirmation") ||
+        "Are you sure you want to delete your profile?",
+      confirmationKeyboard
+    );
+  } else {
+    ctx.reply(t("pl", "profile_not_found") || "Profile not found");
+  }
+});
+
+bot.action("confirm_delete", async (ctx) => {
+  const userId = ctx.from.id;
+  try {
+    const user = await User.findOne({ telegramId: userId });
+    if (user) {
+      await User.findByIdAndDelete(user._id);
+      ctx.reply(
+        t(user.language || "pl", "profileDeleted") ||
+          "Your profile has been deleted."
+      );
+    } else {
+      ctx.reply(t("pl", "profile_not_found") || "Profile not found");
+    }
+  } catch (err) {
+    console.error("Error deleting user profile:", err);
+    ctx.reply(
+      t("pl", "errorDeletingProfile") ||
+        "Error occurred while deleting profile."
+    );
+  }
+});
+
+bot.action("cancel_delete", (ctx) => {
+  ctx.reply(
+    t(
+      ctx.from.id in userLanguages ? userLanguages[ctx.from.id] : "pl",
+      "deleteCancelled"
+    ) || "Deletion cancelled."
   );
 });
 
@@ -243,18 +439,53 @@ bot.action(
   }
 );
 
-bot.on("text", (ctx) => {
+bot.on("text", async (ctx) => {
+  // Объявляем обработчик как асинхронный
   const userId = ctx.from.id;
   const message = ctx.message.text;
 
-  if (message.toLowerCase() === "/start") {
-    userAnswers[userId] = {};
-    ctx.reply(t(userLanguages[userId] || "pl", "start"));
-    ctx.reply(t(userLanguages[userId] || "pl", "nameAndSurnameQuestion"));
+  if (
+    message.toLowerCase() === "/start" ||
+    message.toLowerCase() === "/profile"
+  ) {
+    const user = await User.findOne({ telegramId: userId });
+    if (user) {
+      await displayUserProfile(user, userId, ctx);
+    } else {
+      userAnswers[userId] = {};
+      ctx.reply(t(userLanguages[userId] || "pl", "start"));
+      ctx.reply(t(userLanguages[userId] || "pl", "nameAndSurnameQuestion"));
+    }
     return;
   }
 
-  if (!userAnswers[userId].fullName) {
+  if (
+    message === t(userLanguages[userId] || "pl", "viewVacancies") ||
+    message === "View Vacancies"
+  ) {
+    await showVacanciesForUser(userId, ctx);
+    return;
+  }
+
+  if (userAnswers[userId] && userAnswers[userId].fieldToEdit) {
+    const field = userAnswers[userId].fieldToEdit;
+    userAnswers[userId] = {};
+
+    try {
+      const user = await User.findOne({ telegramId: userId });
+      if (user) {
+        user[field] = message;
+        await user.save();
+        ctx.reply(t(user.language || "pl", "fieldUpdated", field));
+        await displayUserProfile(user, userId, ctx); // Используем await, если displayUserProfile асинхронная
+      } else {
+        ctx.reply(t("pl", "profile_not_found"));
+      }
+    } catch (err) {
+      console.error("Error updating user data:", err);
+      ctx.reply(t(userLanguages[userId] || "pl", "errorSavingData"));
+    }
+  } else if (!userAnswers[userId].fullName) {
     userAnswers[userId].fullName = message;
     askGender(ctx, userId);
   } else if (!userAnswers[userId].gender) {
@@ -281,7 +512,7 @@ bot.on("text", (ctx) => {
     askPhoto(ctx, userId);
   } else {
     userAnswers[userId].photo = message;
-    saveUserAnswers(userId, ctx);
+    await saveUserAnswers(userId, ctx); // Используем await, так как saveUserAnswers асинхронная
   }
 });
 
@@ -292,9 +523,28 @@ bot.on("photo", async (ctx) => {
     return ctx.reply(t(userLanguages[userId] || "pl", "formNotStarted"));
   }
 
-  const fileId = ctx.message.photo[ctx.message.photo.length - 1].file_id;
-  userAnswers[userId].photo = fileId;
-  saveUserAnswers(userId, ctx);
+  if (userAnswers[userId].fieldToEdit === "photo") {
+    const fileId = ctx.message.photo[ctx.message.photo.length - 1].file_id;
+    try {
+      const user = await User.findOne({ telegramId: userId });
+      if (user) {
+        user.photo = fileId;
+        await user.save();
+        ctx.reply(t(user.language || "pl", "fieldUpdated", "photo"));
+        displayUserProfile(user, userId, ctx);
+      } else {
+        ctx.reply(t("pl", "profile_not_found"));
+      }
+    } catch (err) {
+      console.error("Error updating user photo:", err);
+      ctx.reply(t(userLanguages[userId] || "pl", "errorSavingData"));
+    }
+  } else {
+    // Если это не редактирование фото, продолжаем с обычной логикой
+    const fileId = ctx.message.photo[ctx.message.photo.length - 1].file_id;
+    userAnswers[userId].photo = fileId;
+    saveUserAnswers(userId, ctx);
+  }
 });
 
 async function saveUserAnswers(userId, ctx) {
@@ -311,7 +561,7 @@ async function saveUserAnswers(userId, ctx) {
     } else {
       Object.assign(user, userData);
     }
-
+    // Сохраняем пользователя в базу данных
     await user.save();
     console.log("User data saved:", user.toObject());
     const language = userLanguages[userId] || user.language || "pl";
@@ -337,12 +587,16 @@ ${user.phone || t(language, "notSpecified")} ${
     }
     `;
 
-    if (user.photo) {
-      await ctx.replyWithPhoto(user.photo, { caption: formattedProfile });
-    } else {
-      ctx.reply(formattedProfile);
-    }
+    // Отображаем профиль
+    // if (user.photo) {
+    //   await ctx.replyWithPhoto(user.photo, { caption: formattedProfile });
+    // } else {
+    //   ctx.reply(formattedProfile);
+    // }
     ctx.reply(t(language, "thanks"));
+
+    // Вызываем displayUserProfile после сохранения и отображения профиля
+    await displayUserProfile(user, userId, ctx);
   } catch (err) {
     console.error("Error saving user data:", err);
     ctx.reply(t(userLanguages[userId] || "pl", "errorSavingData"));
@@ -350,7 +604,7 @@ ${user.phone || t(language, "notSpecified")} ${
 }
 
 async function displayUserProfile(user, userId, ctx) {
-  const language = userLanguages[userId] || user.language || "pl";
+  const language = user.language || "pl";
   const formattedProfile = `
 ${user.fullName || t(language, "notSpecified")} ${
     user.age || t(language, "notSpecified")
@@ -373,9 +627,34 @@ ${user.phone || t(language, "notSpecified")} ${
   `;
 
   if (user.photo) {
-    await ctx.replyWithPhoto(user.photo, { caption: formattedProfile });
+    await ctx.replyWithPhoto(user.photo, {
+      caption: formattedProfile,
+      reply_markup: {
+        keyboard: [
+          [
+            {
+              text: t(language, "viewVacancies") || "View Vacancies",
+            },
+          ],
+        ],
+        resize_keyboard: true,
+        one_time_keyboard: true,
+      },
+    });
   } else {
-    ctx.reply(formattedProfile);
+    ctx.reply(formattedProfile, {
+      reply_markup: {
+        keyboard: [
+          [
+            {
+              text: t(language, "viewVacancies") || "View Vacancies",
+            },
+          ],
+        ],
+        resize_keyboard: true,
+        one_time_keyboard: true,
+      },
+    });
   }
   ctx.reply(t(language, "profileViewed"));
 }
