@@ -32,6 +32,11 @@ module.exports = {
     cancelDelete: "Отмена",
     profileDeleted: "Ваш профиль успешно удален.",
     deleteCanceled: "Удаление профиля отменено.",
+    apply: "Отозваться",
+    bookmark: "В Закладки",
+    notInterested: "Не интересно",
+    appliedSuccess: "Отозвались успешно",
+    bookmarkedSuccess: "Добавлено в закладки",
   },
   ua: {
     chooseLanguage: "Оберіть мову:",
@@ -66,5 +71,10 @@ module.exports = {
     cancelDelete: "Скасувати",
     profileDeleted: "Ваш профіль успішно видалено.",
     deleteCanceled: "Видалення профілю скасовано.",
+    apply: "Відгукнутися",
+    bookmark: "В Закладки",
+    notInterested: "Не цікавить",
+    appliedSuccess: "Успішно відгукнулися",
+    bookmarkedSuccess: "Додано до закладок",
   },
 };

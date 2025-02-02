@@ -1,9 +1,11 @@
 const { Telegraf, session } = require("telegraf");
-const { User } = require("./db");
+const mongoose = require("mongoose");
+const { User, Job } = require("./db");
 const locales = require("./locales");
 require("dotenv").config();
 const bot = new Telegraf(process.env.BOT_TOKEN);
 const { getUpdatedPhotoUrl } = require("./photoUtils");
+const { sendMail } = require("./sendEmails");
 
 bot.use(session());
 
@@ -101,6 +103,117 @@ bot.command("delete", async (ctx) => {
     ctx.reply(
       "Пользователь не найден. Возможно, у вас нет профиля для удаления."
     );
+  }
+});
+
+bot.command("vacancies", async (ctx) => {
+  if (!ctx.session) ctx.session = {};
+  const user = await User.findOne({ telegramId: ctx.from.id });
+  if (user) {
+    let jobs = await Job.find({ voivodeship: user.voivodeship });
+
+    // Создаем массив ObjectId для исключения
+    const excludeIds = [
+      ...(user.interested || []),
+      ...(user.bookmarks || []),
+      ...(user.declined || []),
+    ].map((id) => new mongoose.Types.ObjectId(id));
+
+    // Фильтруем вакансии, исключая те, которые уже в списке
+    jobs = jobs.filter(
+      (job) => !excludeIds.some((excludeId) => excludeId.equals(job._id))
+    );
+
+    if (jobs.length > 0) {
+      ctx.session.jobs = jobs;
+      ctx.session.currentJobIndex = 0;
+      displayJob(ctx, user);
+    } else {
+      ctx.reply(
+        "К сожалению в вашем воеводстве нету новых вакансий на данный момент."
+      );
+    }
+  }
+});
+
+function displayJob(ctx, user) {
+  if (!ctx.session) ctx.session = {}; // Подстраховка, если сессия не была инициализирована
+  if (ctx.session.currentJobIndex < ctx.session.jobs.length) {
+    const job = ctx.session.jobs[ctx.session.currentJobIndex];
+    const t = locales[user.language];
+    let jobText = `*${job.name}*\n\n${job.description}\n\nЗарплата: ${
+      job.salary
+    }\nГород: ${job.city}\nВоеводство: ${
+      job.voivodeship
+    }\nОбязанности: ${job.responsibilities.join(
+      ", "
+    )}\nБонусы: ${job.bonuses.join(", ")}`;
+    ctx.reply(jobText, {
+      parse_mode: "Markdown",
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: t.apply, callback_data: `apply-${job._id}` }],
+          [{ text: t.bookmark, callback_data: `bookmark-${job._id}` }],
+          [{ text: t.notInterested, callback_data: `decline-${job._id}` }],
+        ],
+      },
+    });
+  } else {
+    ctx.reply("Больше вакансий нет.");
+  }
+}
+
+bot.action(/^apply-(.*)$/, async (ctx) => {
+  const user = await User.findOne({ telegramId: ctx.from.id });
+  const jobId = ctx.match[1];
+  if (user) {
+    user.interested.push(jobId);
+    await user.save();
+
+    const t = locales[user.language];
+    const job = await Job.findById(jobId);
+    if (job) {
+      // Отправка email
+      try {
+        await sendMail(
+          `Отклик на вакансию: ${job.name}`,
+          `Пользователь ${user.fullName} заинтересован в вакансии ${job.name}.`
+        );
+        ctx.answerCbQuery(t.appliedSuccess);
+      } catch (error) {
+        console.error("Ошибка при отправке письма:", error);
+        ctx.answerCbQuery("Ошибка при отправке отклика. Попробуйте снова.");
+      }
+    } else {
+      ctx.answerCbQuery("Вакансия не найдена.");
+    }
+
+    ctx.session.currentJobIndex++;
+    displayJob(ctx, user);
+  }
+});
+
+bot.action(/^bookmark-(.*)$/, async (ctx) => {
+  const user = await User.findOne({ telegramId: ctx.from.id });
+  const jobId = ctx.match[1];
+  if (user) {
+    user.bookmarks.push(jobId);
+    await user.save();
+    const t = locales[user.language];
+    ctx.answerCbQuery(t.bookmarkedSuccess);
+    ctx.session.currentJobIndex++;
+    displayJob(ctx, user);
+  }
+});
+
+bot.action(/^decline-(.*)$/, async (ctx) => {
+  const user = await User.findOne({ telegramId: ctx.from.id });
+  const jobId = ctx.match[1];
+  if (user) {
+    user.declined.push(jobId);
+    await user.save();
+    ctx.session.currentJobIndex++;
+    displayJob(ctx, user);
   }
 });
 
@@ -418,16 +531,39 @@ bot.action("editGender", async (ctx) => {
 });
 
 bot.action("editVoivodeship", async (ctx) => {
+  console.log("first");
+
   const user = await User.findOne({ telegramId: ctx.from.id });
   if (user) {
     const t = locales[user.language];
-    const keyboard = voivodeships.map((v) => [{ text: v, callback_data: v }]);
+    const keyboard = voivodeships.map((v) => [
+      { text: v, callback_data: `setVoivodeship-${v}` },
+    ]);
     ctx.reply(t.voivodeshipQuestion, {
       reply_markup: { inline_keyboard: keyboard },
     });
     ctx.session.editField = "voivodeship";
   }
 });
+
+bot.action(
+  voivodeships.map((v) => `setVoivodeship-${v}`),
+  async (ctx) => {
+    const user = await User.findOne({ telegramId: ctx.from.id });
+    if (user && ctx.session.editField === "voivodeship") {
+      const [, newVoivodeship] = ctx.match[0].split("-");
+      const saved = await saveUserData(user, "voivodeship", newVoivodeship);
+      if (saved) {
+        const t = locales[user.language];
+        ctx.reply(`Воеводство обновлено на ${newVoivodeship}.`);
+        ctx.session.editField = null;
+        await displayProfile(ctx, user);
+      } else {
+        ctx.reply("Ошибка при обновлении воеводства. Попробуйте снова.");
+      }
+    }
+  }
+);
 
 bot.action("editCity", async (ctx) => {
   const user = await User.findOne({ telegramId: ctx.from.id });
