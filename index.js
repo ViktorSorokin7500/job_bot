@@ -32,10 +32,10 @@ async function saveUserData(user, field, value) {
   user[field] = value;
   try {
     await user.save();
-    console.log(`Поле ${field} успешно сохранено.`);
+    console.log(`Поле ${field} збережено.`);
     return true;
   } catch (error) {
-    console.error(`Ошибка при сохранении поля ${field}:`, error);
+    console.error(`Хиба при збереженні поля ${field}:`, error);
     return false;
   }
 }
@@ -43,16 +43,16 @@ async function saveUserData(user, field, value) {
 async function displayProfile(ctx, user) {
   const t = locales[user.language];
   let profileText = t.profileDisplay
-    .replace("{{photo}}", user.photo ? "Загружено" : "Не загружено")
-    .replace("{{fullName}}", user.fullName || "Не указано")
-    .replace("{{age}}", user.age || "Не указано")
-    .replace("{{gender}}", user.gender || "Не указано")
-    .replace("{{voivodeship}}", user.voivodeship || "Не указано")
-    .replace("{{city}}", user.city || "Не указано")
-    .replace("{{professions}}", user.professions || "Не указано")
-    .replace("{{salary}}", user.expectedSalary || "Не указано")
-    .replace("{{phone}}", user.phone || "Не указано")
-    .replace("{{email}}", user.email || "Не указано");
+    .replace("{{photo}}", user.photo ? t.download : t.notload)
+    .replace("{{fullName}}", user.fullName || t.notload)
+    .replace("{{age}}", user.age || t.notload)
+    .replace("{{gender}}", user.gender || t.notload)
+    .replace("{{voivodeship}}", user.voivodeship || t.notload)
+    .replace("{{city}}", user.city || t.notload)
+    .replace("{{professions}}", user.professions || t.notload)
+    .replace("{{salary}}", user.expectedSalary || t.notload)
+    .replace("{{phone}}", user.phone || t.notload)
+    .replace("{{email}}", user.email || t.notload);
 
   if (user.photo) {
     ctx.replyWithPhoto({ url: user.photo }, { caption: profileText });
@@ -61,7 +61,6 @@ async function displayProfile(ctx, user) {
   }
 }
 
-// Регистрируем команду edit в начале
 bot.command("edit", async (ctx) => {
   if (!ctx.session) ctx.session = {};
   const user = await User.findOne({ telegramId: ctx.from.id });
@@ -100,9 +99,8 @@ bot.command("delete", async (ctx) => {
       },
     });
   } else {
-    ctx.reply(
-      "Пользователь не найден. Возможно, у вас нет профиля для удаления."
-    );
+    const t = locales["pl"];
+    ctx.reply(t.userNotFound);
   }
 });
 
@@ -112,14 +110,12 @@ bot.command("vacancies", async (ctx) => {
   if (user) {
     let jobs = await Job.find({ voivodeship: user.voivodeship });
 
-    // Создаем массив ObjectId для исключения
     const excludeIds = [
       ...(user.interested || []),
       ...(user.bookmarks || []),
       ...(user.declined || []),
     ].map((id) => new mongoose.Types.ObjectId(id));
 
-    // Фильтруем вакансии, исключая те, которые уже в списке
     jobs = jobs.filter(
       (job) => !excludeIds.some((excludeId) => excludeId.equals(job._id))
     );
@@ -129,9 +125,8 @@ bot.command("vacancies", async (ctx) => {
       ctx.session.currentJobIndex = 0;
       displayJob(ctx, user);
     } else {
-      ctx.reply(
-        "К сожалению в вашем воеводстве нету новых вакансий на данный момент."
-      );
+      const t = locales[user.language];
+      ctx.reply(t.noJobInVoivodoship);
     }
   }
 });
@@ -140,27 +135,28 @@ bot.command("bookmarks", async (ctx) => {
   if (!ctx.session) ctx.session = {};
   const user = await User.findOne({ telegramId: ctx.from.id });
   if (user && user.bookmarks.length > 0) {
-    const bookmarks = await Job.find({ _id: { $in: user.bookmarks } }); // Находим все закладки
-    ctx.session.jobs = bookmarks; // Сохраняем в сессии
+    const bookmarks = await Job.find({ _id: { $in: user.bookmarks } });
+    ctx.session.jobs = bookmarks;
     ctx.session.currentJobIndex = 0;
     displayBookmark(ctx, user);
   } else {
-    ctx.reply("У вас нет закладок.");
+    const t = locales[user.language];
+    ctx.reply(t.noBookmarks);
   }
 });
 
 function displayBookmark(ctx, user) {
   if (!ctx.session) ctx.session = {};
+  const t = locales[user.language];
   if (ctx.session.currentJobIndex < ctx.session.jobs.length) {
     const job = ctx.session.jobs[ctx.session.currentJobIndex];
-    const t = locales[user.language];
-    let jobText = `*${job.name}*\n\n${job.description}\n\nЗарплата: ${
+    let jobText = `*${job.name}*\n\n${job.description}\n\n${t.salary}: ${
       job.salary
-    }\nГород: ${job.city}\nВоеводство: ${
-      job.voivodeship
-    }\nОбязанности: ${job.responsibilities.join(
+    }\n${t.city}: ${job.city}\n${t.voivodeship}: ${job.voivodeship}\n${
+      t.responsibilities
+    }: ${job.responsibilities.join(", ")}\n${t.bonuses}: ${job.bonuses.join(
       ", "
-    )}\nБонусы: ${job.bonuses.join(", ")}`;
+    )}`;
     ctx.reply(jobText, {
       parse_mode: "MarkdownV2",
       reply_markup: {
@@ -176,24 +172,24 @@ function displayBookmark(ctx, user) {
       },
     });
   } else {
-    ctx.reply("Больше закладок нет.");
+    ctx.reply(t.noBookmarks);
   }
 }
 
 function displayJob(ctx, user) {
-  if (!ctx.session) ctx.session = {}; // Подстраховка, если сессия не была инициализирована
+  if (!ctx.session) ctx.session = {};
+  const t = locales[user.language];
   if (ctx.session.currentJobIndex < ctx.session.jobs.length) {
     const job = ctx.session.jobs[ctx.session.currentJobIndex];
-    const t = locales[user.language];
-    let jobText = `*${job.name}*\n\n${job.description}\n\nЗарплата: ${
+    let jobText = `*${job.name}*\n\n${job.description}\n\n${t.salary}: ${
       job.salary
-    }\nГород: ${job.city}\nВоеводство: ${
-      job.voivodeship
-    }\nОбязанности: ${job.responsibilities.join(
+    }\n${t.city}: ${job.city}\n${t.voivodeship}: ${job.voivodeship}\n${
+      t.responsibilities
+    }: ${job.responsibilities.join(", ")}\n${t.bonuses}: ${job.bonuses.join(
       ", "
-    )}\nБонусы: ${job.bonuses.join(", ")}`;
+    )}`;
     ctx.reply(jobText, {
-      parse_mode: "Markdown",
+      parse_mode: "MarkdownV2",
       reply_markup: {
         inline_keyboard: [
           [{ text: t.apply, callback_data: `apply-${job._id}` }],
@@ -203,80 +199,77 @@ function displayJob(ctx, user) {
       },
     });
   } else {
-    ctx.reply("Больше вакансий нет.");
+    ctx.reply(t.noJobInVoivodoship);
   }
 }
 
 bot.action(/^apply-(.*)$/, async (ctx) => {
   const user = await User.findOne({ telegramId: ctx.from.id });
   const jobId = ctx.match[1];
+  const t = locales[user.language];
   if (user && !user.interested.includes(jobId)) {
-    // Проверка на наличие ID
     user.interested.push(jobId);
     await user.save();
 
-    const t = locales[user.language];
     const job = await Job.findById(jobId);
     if (job) {
-      // Отправка email
       try {
         await sendMail(
-          `Отклик на вакансию: ${job.name}`,
-          `Пользователь ${user.fullName} заинтересован в вакансии ${job.name}.`
+          `Zgłoszenie na ofertę pracy: ${job.name}`,
+          `Użytkownik ${user.fullName} jest zainteresowany ofertą pracy ${job.name}. Kontakt: Telefon: ${user.phone}, E-mail: ${user.email}.`
         );
         ctx.reply(t.appliedSuccess);
       } catch (error) {
-        console.error("Ошибка при отправке письма:", error);
-        ctx.reply("Ошибка при отправке отклика. Попробуйте снова.");
+        console.error("Хиба", error);
+        ctx.reply(t.error);
       }
     } else {
-      ctx.reply("Вакансия не найдена.");
+      ctx.reply(t.vacancyNotFound);
     }
 
     ctx.session.currentJobIndex++;
     displayJob(ctx, user);
   } else {
-    ctx.reply("Вы уже откликнулись на эту вакансию.");
+    ctx.reply(t.alreadyApplied);
   }
 });
 
 bot.action(/^bookmarkApply-(.*)$/, async (ctx) => {
   const user = await User.findOne({ telegramId: ctx.from.id });
-  const jobId = ctx.match[1]; // Это строка с ID
+  const jobId = ctx.match[1];
+  const t = locales[user.language];
   if (user) {
-    const jobObjectId = new mongoose.Types.ObjectId(jobId); // Преобразуем в ObjectId
+    const jobObjectId = new mongoose.Types.ObjectId(jobId);
     if (
       user.bookmarks.some((id) => id.equals(jobObjectId)) &&
       !user.interested.some((id) => id.equals(jobObjectId))
     ) {
-      user.interested.push(jobObjectId); // Добавляем в interested как ObjectId
-      user.bookmarks = user.bookmarks.filter((id) => !id.equals(jobObjectId)); // Удаляем из bookmarks
+      user.interested.push(jobObjectId);
+      user.bookmarks = user.bookmarks.filter((id) => !id.equals(jobObjectId));
       await user.save();
 
-      // Обновляем сессию
       ctx.session.jobs = await Job.find({ _id: { $in: user.bookmarks } });
       ctx.session.currentJobIndex = 0;
 
-      const t = locales[user.language];
       const job = await Job.findById(jobObjectId);
       if (job) {
         try {
           await sendMail(
-            `Отклик на вакансию: ${job.name}`,
-            `Пользователь ${user.fullName} заинтересован в вакансии ${job.name}.`
+            `Zgłoszenie na ofertę pracy: ${job.name}`,
+            `Użytkownik ${user.fullName} jest zainteresowany ofertą pracy ${job.name}. Kontakt: Telefon: ${user.phone}, E-mail: ${user.email}.`
           );
           ctx.reply(t.appliedSuccess);
         } catch (error) {
-          console.error("Ошибка при отправке письма:", error);
-          ctx.reply("Ошибка при отправке отклика. Попробуйте снова.");
+          console.error("Хиба:", error);
+          ctx.reply(t.error);
         }
       } else {
-        ctx.reply("Вакансия не найдена.");
+        ctx.reply(t.vacancyNotFound);
       }
     } else if (user.interested.some((id) => id.equals(jobObjectId))) {
-      ctx.reply("Вы уже откликнулись на эту вакансию.");
+      ctx.reply(t.alreadyApplied);
     } else {
-      ctx.reply("Вакансия не найдена в закладках.");
+      ctx.reply(t.error);
     }
     displayBookmark(ctx, user);
   }
@@ -284,6 +277,7 @@ bot.action(/^bookmarkApply-(.*)$/, async (ctx) => {
 
 bot.action(/^bookmark-(.*)$/, async (ctx) => {
   const user = await User.findOne({ telegramId: ctx.from.id });
+  const t = locales[user.language];
   const jobId = ctx.match[1];
   if (user && !user.bookmarks.includes(jobId)) {
     user.bookmarks.push(jobId);
@@ -293,12 +287,13 @@ bot.action(/^bookmark-(.*)$/, async (ctx) => {
     ctx.session.currentJobIndex++;
     displayJob(ctx, user);
   } else {
-    ctx.reply("Эта вакансия уже в ваших закладках.");
+    ctx.reply(t.alreadyBookmarked);
   }
 });
 
 bot.action(/^decline-(.*)$/, async (ctx) => {
   const user = await User.findOne({ telegramId: ctx.from.id });
+  const t = locales[user.language];
   const jobId = ctx.match[1];
   if (user && !user.declined.includes(jobId)) {
     user.declined.push(jobId);
@@ -306,61 +301,62 @@ bot.action(/^decline-(.*)$/, async (ctx) => {
     ctx.session.currentJobIndex++;
     displayJob(ctx, user);
   } else {
-    ctx.reply("Вы уже отклонили эту вакансию.");
+    ctx.reply(t.alreadyDecided);
   }
 });
 
 bot.action(/^bookmarkDecline-(.*)$/, async (ctx) => {
   const user = await User.findOne({ telegramId: ctx.from.id });
-  const jobId = ctx.match[1]; // Это строка с ID
+  const t = locales[user.language];
+  const jobId = ctx.match[1];
   if (user) {
-    const jobObjectId = new mongoose.Types.ObjectId(jobId); // Преобразуем в ObjectId
+    const jobObjectId = new mongoose.Types.ObjectId(jobId);
     if (
       user.bookmarks.some((id) => id.equals(jobObjectId)) &&
       !user.declined.some((id) => id.equals(jobObjectId))
     ) {
-      user.declined.push(jobObjectId); // Добавляем в declined как ObjectId
-      user.bookmarks = user.bookmarks.filter((id) => !id.equals(jobObjectId)); // Удаляем из bookmarks
+      user.declined.push(jobObjectId);
+      user.bookmarks = user.bookmarks.filter((id) => !id.equals(jobObjectId));
       await user.save();
 
-      // Обновляем сессию
       ctx.session.jobs = await Job.find({ _id: { $in: user.bookmarks } });
       ctx.session.currentJobIndex = 0;
 
       displayBookmark(ctx, user);
     } else if (user.declined.some((id) => id.equals(jobObjectId))) {
-      ctx.reply("Вы уже отклонили эту вакансию.");
+      ctx.reply(t.alreadyDecided);
     } else {
-      ctx.reply("Вакансия не найдена в закладках.");
+      ctx.reply(t.vacancyNotFound);
     }
   }
 });
 
 bot.action("confirmDelete", async (ctx) => {
   const user = await User.findOne({ telegramId: ctx.from.id });
+  const t = locales[user.language];
   if (user) {
     try {
       await User.deleteOne({ telegramId: ctx.from.id });
       const t = locales[user.language];
       ctx.reply(t.profileDeleted);
-      ctx.session = {}; // Сбрасываем сессию
+      ctx.session = {};
     } catch (error) {
-      console.error("Ошибка при удалении профиля:", error);
-      ctx.reply("Произошла ошибка при удалении профиля. Попробуйте снова.");
+      console.error("Хиба", error);
+      ctx.reply(t.errorDelete);
     }
   } else {
-    ctx.reply("Пользователь не найден.");
+    ctx.reply(t.userNotFound);
   }
 });
 
 bot.action("cancelDelete", async (ctx) => {
   const user = await User.findOne({ telegramId: ctx.from.id });
+  const t = locales[user.language];
   if (user) {
-    const t = locales[user.language];
     ctx.reply(t.deleteCanceled);
     await displayProfile(ctx, user);
   } else {
-    ctx.reply("Пользователь не найден.");
+    ctx.reply(t.userNotFound);
   }
 });
 
@@ -422,9 +418,7 @@ bot.on("text", async (ctx) => {
         ctx.reply(t.nameQuestion);
       }
     } else if (!user.gender) {
-      ctx.reply(
-        "Этот раздел не должен срабатывать, так как мы переходим к нему через action."
-      );
+      ctx.reply("You shall no pass");
     } else if (!user.age) {
       if (/^\d+$/.test(ctx.message.text)) {
         const saved = await saveUserData(
@@ -444,9 +438,7 @@ bot.on("text", async (ctx) => {
         ctx.reply(t.ageQuestion);
       }
     } else if (!user.voivodeship) {
-      ctx.reply(
-        "Этот раздел не должен срабатывать, так как мы переходим к нему через action."
-      );
+      ctx.reply("You shall no pass");
     } else if (!user.city) {
       if (/^[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ\s]+$/.test(ctx.message.text)) {
         const saved = await saveUserData(user, "city", ctx.message.text);
@@ -489,16 +481,15 @@ bot.on("text", async (ctx) => {
         ctx.reply(t.photoQuestion);
       }
     } else {
-      // Редактирование
       if (ctx.session.editField) {
-        let isValid = true; // По умолчанию считаем ввод корректным
+        let isValid = true;
         switch (ctx.session.editField) {
           case "fullName":
             isValid = /^[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ\s]+$/.test(ctx.message.text);
             break;
           case "age":
             isValid = /^\d+$/.test(ctx.message.text);
-            if (isValid) ctx.message.text = parseInt(ctx.message.text); // Преобразование в число
+            if (isValid) ctx.message.text = parseInt(ctx.message.text);
             break;
           case "city":
             isValid = /^[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ\s]+$/.test(ctx.message.text);
@@ -508,9 +499,8 @@ bot.on("text", async (ctx) => {
             break;
           case "expectedSalary":
             isValid = /^\d+$/.test(ctx.message.text);
-            if (isValid) ctx.message.text = parseInt(ctx.message.text); // Преобразование в число
+            if (isValid) ctx.message.text = parseInt(ctx.message.text);
             break;
-          // Для email и phone валидация не требуется, так как они string
         }
 
         if (isValid) {
@@ -520,7 +510,7 @@ bot.on("text", async (ctx) => {
               : ctx.session.editField;
           const saved = await saveUserData(user, fieldToSave, ctx.message.text);
           if (saved) {
-            ctx.reply(`Поле ${ctx.session.editField} обновлено.`);
+            ctx.reply(`${ctx.session.editField} updated`);
             ctx.session.editField = null;
             await displayProfile(ctx, user);
           }
@@ -562,20 +552,18 @@ bot.on("photo", async (ctx) => {
     const photoUrl = await getUpdatedPhotoUrl(photo.file_id, bot);
     if (photoUrl) {
       if (!user.photo) {
-        // Если фото еще не было загружено (заполнение профиля)
         const saved = await saveUserData(user, "photo", photoUrl);
         if (saved) {
           await displayProfile(ctx, user);
         }
       } else if (ctx.session.editField === "photo") {
-        // Редактирование фото
         const saved = await saveUserData(user, "photo", photoUrl);
         if (saved) {
           ctx.session.editField = null;
           await displayProfile(ctx, user);
         }
       } else {
-        ctx.reply("Фото уже загружено. Для изменения используйте /edit.");
+        ctx.reply(t.photoDownload);
       }
     } else {
       ctx.reply(t.photoQuestion);
@@ -583,7 +571,6 @@ bot.on("photo", async (ctx) => {
   }
 });
 
-// Обработчики для редактирования
 bot.action("editLanguage", async (ctx) => {
   const user = await User.findOne({ telegramId: ctx.from.id });
   if (user) {
@@ -606,11 +593,11 @@ bot.action(["setLanguage-pl", "setLanguage-ua"], async (ctx) => {
     const saved = await saveUserData(user, "language", newLanguage);
     if (saved) {
       ctx.reply(
-        `Язык изменен на ${newLanguage === "pl" ? "польский" : "украинский"}.`
+        `Język zmieniony na ${newLanguage === "pl" ? "polski" : "ukraiński"}.`
       );
-      await displayProfile(ctx, user); // Отображаем обновленный профиль
+      await displayProfile(ctx, user);
     } else {
-      ctx.reply("Ошибка при изменении языка. Попробуйте снова.");
+      ctx.reply("Błąd przy zmianie języka. Spróbuj ponownie.");
     }
   }
 });
@@ -669,16 +656,18 @@ bot.action(
   voivodeships.map((v) => `setVoivodeship-${v}`),
   async (ctx) => {
     const user = await User.findOne({ telegramId: ctx.from.id });
+    const t = locales[user.language];
     if (user && ctx.session.editField === "voivodeship") {
       const [, newVoivodeship] = ctx.match[0].split("-");
       const saved = await saveUserData(user, "voivodeship", newVoivodeship);
       if (saved) {
-        const t = locales[user.language];
-        ctx.reply(`Воеводство обновлено на ${newVoivodeship}.`);
+        ctx.reply(
+          t.voivodeshipUpdated.replace("{{voivodeship}}", newVoivodeship)
+        );
         ctx.session.editField = null;
         await displayProfile(ctx, user);
       } else {
-        ctx.reply("Ошибка при обновлении воеводства. Попробуйте снова.");
+        ctx.reply(t.errorUpdatingVoivodeship);
       }
     }
   }
