@@ -85,6 +85,53 @@ bot.command("edit", async (ctx) => {
   }
 });
 
+bot.command("delete", async (ctx) => {
+  const user = await User.findOne({ telegramId: ctx.from.id });
+  if (user) {
+    const t = locales[user.language];
+    ctx.reply(t.deleteConfirm, {
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: t.confirmDelete, callback_data: "confirmDelete" }],
+          [{ text: t.cancelDelete, callback_data: "cancelDelete" }],
+        ],
+      },
+    });
+  } else {
+    ctx.reply(
+      "Пользователь не найден. Возможно, у вас нет профиля для удаления."
+    );
+  }
+});
+
+bot.action("confirmDelete", async (ctx) => {
+  const user = await User.findOne({ telegramId: ctx.from.id });
+  if (user) {
+    try {
+      await User.deleteOne({ telegramId: ctx.from.id });
+      const t = locales[user.language];
+      ctx.reply(t.profileDeleted);
+      ctx.session = {}; // Сбрасываем сессию
+    } catch (error) {
+      console.error("Ошибка при удалении профиля:", error);
+      ctx.reply("Произошла ошибка при удалении профиля. Попробуйте снова.");
+    }
+  } else {
+    ctx.reply("Пользователь не найден.");
+  }
+});
+
+bot.action("cancelDelete", async (ctx) => {
+  const user = await User.findOne({ telegramId: ctx.from.id });
+  if (user) {
+    const t = locales[user.language];
+    ctx.reply(t.deleteCanceled);
+    await displayProfile(ctx, user);
+  } else {
+    ctx.reply("Пользователь не найден.");
+  }
+});
+
 bot.start(async (ctx) => {
   if (!ctx.session) ctx.session = {};
   const user = await User.findOne({ telegramId: ctx.from.id });
@@ -305,6 +352,37 @@ bot.on("photo", async (ctx) => {
 });
 
 // Обработчики для редактирования
+bot.action("editLanguage", async (ctx) => {
+  const user = await User.findOne({ telegramId: ctx.from.id });
+  if (user) {
+    const t = locales[user.language];
+    ctx.reply(t.chooseLanguage, {
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: "Polski", callback_data: "setLanguage-pl" }],
+          [{ text: "Українська", callback_data: "setLanguage-ua" }],
+        ],
+      },
+    });
+  }
+});
+
+bot.action(["setLanguage-pl", "setLanguage-ua"], async (ctx) => {
+  const user = await User.findOne({ telegramId: ctx.from.id });
+  if (user) {
+    const [, newLanguage] = ctx.match[0].split("-");
+    const saved = await saveUserData(user, "language", newLanguage);
+    if (saved) {
+      ctx.reply(
+        `Язык изменен на ${newLanguage === "pl" ? "польский" : "украинский"}.`
+      );
+      await displayProfile(ctx, user); // Отображаем обновленный профиль
+    } else {
+      ctx.reply("Ошибка при изменении языка. Попробуйте снова.");
+    }
+  }
+});
+
 bot.action("editFullName", async (ctx) => {
   const user = await User.findOne({ telegramId: ctx.from.id });
   if (user) {

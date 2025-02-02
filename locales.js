@@ -27,6 +27,11 @@ module.exports = {
     photo: "Zdjęcie",
     male: "Mężczyzna",
     female: "Kobieta",
+    deleteConfirm: "Вы уверены, что хотите удалить свой профиль?",
+    confirmDelete: "Да, удалить",
+    cancelDelete: "Отмена",
+    profileDeleted: "Ваш профиль успешно удален.",
+    deleteCanceled: "Удаление профиля отменено.",
   },
   ua: {
     chooseLanguage: "Оберіть мову:",
@@ -56,5 +61,10 @@ module.exports = {
     photo: "Фото",
     male: "Чоловік",
     female: "Жінка",
+    deleteConfirm: "Ви впевнені, що хочете видалити свій профіль?",
+    confirmDelete: "Так, видалити",
+    cancelDelete: "Скасувати",
+    profileDeleted: "Ваш профіль успішно видалено.",
+    deleteCanceled: "Видалення профілю скасовано.",
   },
 };
