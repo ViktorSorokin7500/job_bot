@@ -136,6 +136,50 @@ bot.command("vacancies", async (ctx) => {
   }
 });
 
+bot.command("bookmarks", async (ctx) => {
+  if (!ctx.session) ctx.session = {};
+  const user = await User.findOne({ telegramId: ctx.from.id });
+  if (user && user.bookmarks.length > 0) {
+    const bookmarks = await Job.find({ _id: { $in: user.bookmarks } }); // Находим все закладки
+    ctx.session.jobs = bookmarks; // Сохраняем в сессии
+    ctx.session.currentJobIndex = 0;
+    displayBookmark(ctx, user);
+  } else {
+    ctx.reply("У вас нет закладок.");
+  }
+});
+
+function displayBookmark(ctx, user) {
+  if (!ctx.session) ctx.session = {};
+  if (ctx.session.currentJobIndex < ctx.session.jobs.length) {
+    const job = ctx.session.jobs[ctx.session.currentJobIndex];
+    const t = locales[user.language];
+    let jobText = `*${job.name}*\n\n${job.description}\n\nЗарплата: ${
+      job.salary
+    }\nГород: ${job.city}\nВоеводство: ${
+      job.voivodeship
+    }\nОбязанности: ${job.responsibilities.join(
+      ", "
+    )}\nБонусы: ${job.bonuses.join(", ")}`;
+    ctx.reply(jobText, {
+      parse_mode: "MarkdownV2",
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: t.apply, callback_data: `bookmarkApply-${job._id}` }],
+          [
+            {
+              text: t.notInterested,
+              callback_data: `bookmarkDecline-${job._id}`,
+            },
+          ],
+        ],
+      },
+    });
+  } else {
+    ctx.reply("Больше закладок нет.");
+  }
+}
+
 function displayJob(ctx, user) {
   if (!ctx.session) ctx.session = {}; // Подстраховка, если сессия не была инициализирована
   if (ctx.session.currentJobIndex < ctx.session.jobs.length) {
@@ -166,7 +210,8 @@ function displayJob(ctx, user) {
 bot.action(/^apply-(.*)$/, async (ctx) => {
   const user = await User.findOne({ telegramId: ctx.from.id });
   const jobId = ctx.match[1];
-  if (user) {
+  if (user && !user.interested.includes(jobId)) {
+    // Проверка на наличие ID
     user.interested.push(jobId);
     await user.save();
 
@@ -179,41 +224,115 @@ bot.action(/^apply-(.*)$/, async (ctx) => {
           `Отклик на вакансию: ${job.name}`,
           `Пользователь ${user.fullName} заинтересован в вакансии ${job.name}.`
         );
-        ctx.answerCbQuery(t.appliedSuccess);
+        ctx.reply(t.appliedSuccess);
       } catch (error) {
         console.error("Ошибка при отправке письма:", error);
-        ctx.answerCbQuery("Ошибка при отправке отклика. Попробуйте снова.");
+        ctx.reply("Ошибка при отправке отклика. Попробуйте снова.");
       }
     } else {
-      ctx.answerCbQuery("Вакансия не найдена.");
+      ctx.reply("Вакансия не найдена.");
     }
 
     ctx.session.currentJobIndex++;
     displayJob(ctx, user);
+  } else {
+    ctx.reply("Вы уже откликнулись на эту вакансию.");
+  }
+});
+
+bot.action(/^bookmarkApply-(.*)$/, async (ctx) => {
+  const user = await User.findOne({ telegramId: ctx.from.id });
+  const jobId = ctx.match[1]; // Это строка с ID
+  if (user) {
+    const jobObjectId = new mongoose.Types.ObjectId(jobId); // Преобразуем в ObjectId
+    if (
+      user.bookmarks.some((id) => id.equals(jobObjectId)) &&
+      !user.interested.some((id) => id.equals(jobObjectId))
+    ) {
+      user.interested.push(jobObjectId); // Добавляем в interested как ObjectId
+      user.bookmarks = user.bookmarks.filter((id) => !id.equals(jobObjectId)); // Удаляем из bookmarks
+      await user.save();
+
+      // Обновляем сессию
+      ctx.session.jobs = await Job.find({ _id: { $in: user.bookmarks } });
+      ctx.session.currentJobIndex = 0;
+
+      const t = locales[user.language];
+      const job = await Job.findById(jobObjectId);
+      if (job) {
+        try {
+          await sendMail(
+            `Отклик на вакансию: ${job.name}`,
+            `Пользователь ${user.fullName} заинтересован в вакансии ${job.name}.`
+          );
+          ctx.reply(t.appliedSuccess);
+        } catch (error) {
+          console.error("Ошибка при отправке письма:", error);
+          ctx.reply("Ошибка при отправке отклика. Попробуйте снова.");
+        }
+      } else {
+        ctx.reply("Вакансия не найдена.");
+      }
+    } else if (user.interested.some((id) => id.equals(jobObjectId))) {
+      ctx.reply("Вы уже откликнулись на эту вакансию.");
+    } else {
+      ctx.reply("Вакансия не найдена в закладках.");
+    }
+    displayBookmark(ctx, user);
   }
 });
 
 bot.action(/^bookmark-(.*)$/, async (ctx) => {
   const user = await User.findOne({ telegramId: ctx.from.id });
   const jobId = ctx.match[1];
-  if (user) {
+  if (user && !user.bookmarks.includes(jobId)) {
     user.bookmarks.push(jobId);
     await user.save();
     const t = locales[user.language];
-    ctx.answerCbQuery(t.bookmarkedSuccess);
+    ctx.reply(t.bookmarkedSuccess);
     ctx.session.currentJobIndex++;
     displayJob(ctx, user);
+  } else {
+    ctx.reply("Эта вакансия уже в ваших закладках.");
   }
 });
 
 bot.action(/^decline-(.*)$/, async (ctx) => {
   const user = await User.findOne({ telegramId: ctx.from.id });
   const jobId = ctx.match[1];
-  if (user) {
+  if (user && !user.declined.includes(jobId)) {
     user.declined.push(jobId);
     await user.save();
     ctx.session.currentJobIndex++;
     displayJob(ctx, user);
+  } else {
+    ctx.reply("Вы уже отклонили эту вакансию.");
+  }
+});
+
+bot.action(/^bookmarkDecline-(.*)$/, async (ctx) => {
+  const user = await User.findOne({ telegramId: ctx.from.id });
+  const jobId = ctx.match[1]; // Это строка с ID
+  if (user) {
+    const jobObjectId = new mongoose.Types.ObjectId(jobId); // Преобразуем в ObjectId
+    if (
+      user.bookmarks.some((id) => id.equals(jobObjectId)) &&
+      !user.declined.some((id) => id.equals(jobObjectId))
+    ) {
+      user.declined.push(jobObjectId); // Добавляем в declined как ObjectId
+      user.bookmarks = user.bookmarks.filter((id) => !id.equals(jobObjectId)); // Удаляем из bookmarks
+      await user.save();
+
+      // Обновляем сессию
+      ctx.session.jobs = await Job.find({ _id: { $in: user.bookmarks } });
+      ctx.session.currentJobIndex = 0;
+
+      displayBookmark(ctx, user);
+    } else if (user.declined.some((id) => id.equals(jobObjectId))) {
+      ctx.reply("Вы уже отклонили эту вакансию.");
+    } else {
+      ctx.reply("Вакансия не найдена в закладках.");
+    }
   }
 });
 
