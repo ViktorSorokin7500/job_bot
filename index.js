@@ -734,7 +734,7 @@ bot.launch();
 process.once("SIGINT", () => bot.stop("SIGINT"));
 process.once("SIGTERM", () => bot.stop("SIGTERM"));
 
-const webhookUrl = "https://polish-bot-25.onrender.com/webhook";
+const webhookUrl = "https://job_bot.onrender.com/webhook";
 
 bot.telegram.setWebhook(webhookUrl);
 
