@@ -56,6 +56,8 @@ module.exports = {
       "Województwo zostało zaktualizowane do {{voivodeship}}.",
     errorUpdatingVoivodeship:
       "Błąd podczas aktualizacji województwa. Spróbuj ponownie.",
+    errorUpdatingGender: "Błąd podczas aktualizacji płeć. Spróbuj ponownie.",
+    genderUpdated: "Płeć zostało zaktualizowane na {{gender}}.",
   },
   ua: {
     chooseLanguage: "Оберіть мову:",
@@ -114,5 +116,7 @@ module.exports = {
     voivodeshipUpdated: "Воєводство оновлено на {{voivodeship}}.",
     errorUpdatingVoivodeship:
       "Помилка під час оновлення воєводства. Спробуйте знову.",
+    errorUpdatingGender: "Помилка під час оновлення стату.",
+    genderUpdated: "Стать оновлена на {{gender}}.",
   },
 };

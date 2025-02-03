@@ -626,6 +626,8 @@ bot.action("editGender", async (ctx) => {
   const user = await User.findOne({ telegramId: ctx.from.id });
   if (user) {
     const t = locales[user.language];
+    if (!ctx.session) ctx.session = {};
+    ctx.session.editField = "gender";
     ctx.reply(t.genderQuestion, {
       reply_markup: {
         inline_keyboard: [
@@ -634,20 +636,28 @@ bot.action("editGender", async (ctx) => {
         ],
       },
     });
-    ctx.session.editField = "gender";
   }
 });
 
 bot.action(["setGender-male", "setGender-female"], async (ctx) => {
+  if (!ctx.session) ctx.session = {};
+
   const user = await User.findOne({ telegramId: ctx.from.id });
   const t = locales[user.language];
-  if (user && ctx.session.editField === "gender") {
+
+  if (user) {
     const [, newGender] = ctx.match[0].split("-");
     const saved = await saveUserData(user, "gender", newGender);
     if (saved) {
-      ctx.reply(t.genderUpdated.replace("{{gender}}", newGender));
-      ctx.session.editField = null;
-      await displayProfile(ctx, user);
+      if (!ctx.session.editField) ctx.session.editField = "gender";
+
+      if (ctx.session.editField === "gender") {
+        ctx.reply(t.genderUpdated.replace("{{gender}}", newGender));
+        ctx.session.editField = null; // Сброс editField после успешной операции
+        await displayProfile(ctx, user);
+      } else {
+        ctx.reply(t.errorUpdatingGender);
+      }
     } else {
       ctx.reply(t.errorUpdatingGender);
     }
