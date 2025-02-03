@@ -734,12 +734,6 @@ bot.launch();
 process.once("SIGINT", () => bot.stop("SIGINT"));
 process.once("SIGTERM", () => bot.stop("SIGTERM"));
 
-const webhookUrl = "https://job_bot.onrender.com/webhook";
-
-bot.telegram.setWebhook(webhookUrl);
-
-app.use(bot.webhookCallback("/webhook"));
-
 app.get("/", (req, res) => {
   console.log("Mmm... I’m Mr. Frundles");
   res.send("Bot is running!");
@@ -747,5 +741,5 @@ app.get("/", (req, res) => {
 
 const PORT = process.env.PORT || 443;
 app.listen(PORT, () => {
-  console.log(`Server is running on ${webhookUrl}`);
+  console.log(`Server is running`);
 });
