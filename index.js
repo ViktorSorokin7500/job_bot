@@ -228,11 +228,9 @@ bot.action(/^apply-(.*)$/, async (ctx) => {
     } else {
       ctx.reply(t.vacancyNotFound);
     }
-
-    setTimeout(() => {
-      ctx.session.currentJobIndex++;
-      displayJob(ctx, user);
-    }, 1000);
+    await new Promise((resolve) => setTimeout(resolve, 750));
+    ctx.session.currentJobIndex++;
+    displayJob(ctx, user);
   } else {
     ctx.reply(t.alreadyApplied);
   }
@@ -275,9 +273,8 @@ bot.action(/^bookmarkApply-(.*)$/, async (ctx) => {
     } else {
       ctx.reply(t.error);
     }
-    setTimeout(() => {
-      displayBookmark(ctx, user);
-    }, 1000);
+    await new Promise((resolve) => setTimeout(resolve, 750));
+    displayBookmark(ctx, user);
   }
 });
 
@@ -290,10 +287,9 @@ bot.action(/^bookmark-(.*)$/, async (ctx) => {
     await user.save();
     const t = locales[user.language];
     ctx.reply(t.bookmarkedSuccess);
-    setTimeout(() => {
-      ctx.session.currentJobIndex++;
-      displayJob(ctx, user);
-    }, 500);
+    await new Promise((resolve) => setTimeout(resolve, 750));
+    ctx.session.currentJobIndex++;
+    displayJob(ctx, user);
   } else {
     ctx.reply(t.alreadyBookmarked);
   }
@@ -775,3 +771,5 @@ const PORT = process.env.PORT || 443;
 app.listen(PORT, () => {
   console.log(`Server is running`);
 });
+
+bookmarkedSuccess;
