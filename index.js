@@ -1,8 +1,10 @@
 const { Telegraf, session } = require("telegraf");
 const mongoose = require("mongoose");
 const { User, Job } = require("./db");
+const express = require("express");
 const locales = require("./locales");
 require("dotenv").config();
+const app = express();
 const bot = new Telegraf(process.env.BOT_TOKEN);
 const { getUpdatedPhotoUrl } = require("./photoUtils");
 const { sendMail } = require("./sendEmails");
@@ -256,7 +258,7 @@ bot.action(/^bookmarkApply-(.*)$/, async (ctx) => {
         try {
           await sendMail(
             `Zgłoszenie na ofertę pracy: ${job.name}`,
-            `Użytkownik ${user.fullName} jest zainteresowany ofertą pracy ${job.name}. Kontakt: Telefon: ${user.phone}, E-mail: ${user.email}.`
+            `Użytkownik ${user.fullName} jest zainteresowany ofertą pracy ${job.name} (${job.city}). Kontakt: Telefon: ${user.phone}, E-mail: ${user.email}.`
           );
           ctx.reply(t.appliedSuccess);
         } catch (error) {
@@ -731,3 +733,19 @@ bot.launch();
 
 process.once("SIGINT", () => bot.stop("SIGINT"));
 process.once("SIGTERM", () => bot.stop("SIGTERM"));
+
+const webhookUrl = "https://polish-bot-25.onrender.com/webhook";
+
+bot.telegram.setWebhook(webhookUrl);
+
+app.use(bot.webhookCallback("/webhook"));
+
+app.get("/", (req, res) => {
+  console.log("Mmm... I’m Mr. Frundles");
+  res.send("Bot is running!");
+});
+
+const PORT = process.env.PORT || 443;
+app.listen(PORT, () => {
+  console.log(`Server is running on ${webhookUrl}`);
+});
