@@ -629,12 +629,28 @@ bot.action("editGender", async (ctx) => {
     ctx.reply(t.genderQuestion, {
       reply_markup: {
         inline_keyboard: [
-          [{ text: t.male, callback_data: "male" }],
-          [{ text: t.female, callback_data: "female" }],
+          [{ text: t.male, callback_data: "setGender-male" }],
+          [{ text: t.female, callback_data: "setGender-female" }],
         ],
       },
     });
     ctx.session.editField = "gender";
+  }
+});
+
+bot.action(["setGender-male", "setGender-female"], async (ctx) => {
+  const user = await User.findOne({ telegramId: ctx.from.id });
+  const t = locales[user.language];
+  if (user && ctx.session.editField === "gender") {
+    const [, newGender] = ctx.match[0].split("-");
+    const saved = await saveUserData(user, "gender", newGender);
+    if (saved) {
+      ctx.reply(t.genderUpdated.replace("{{gender}}", newGender));
+      ctx.session.editField = null;
+      await displayProfile(ctx, user);
+    } else {
+      ctx.reply(t.errorUpdatingGender);
+    }
   }
 });
 
