@@ -691,7 +691,9 @@ bot.action(
     const user = await User.findOne({ telegramId: ctx.from.id });
     const t = locales[user.language];
     if (user && ctx.session.editField === "voivodeship") {
-      const [, newVoivodeship] = ctx.match[0].split("-");
+      // Извлекаем воеводство, убирая префикс 'setVoivodeship-'
+      const newVoivodeship = ctx.match[0].replace("setVoivodeship-", "");
+      console.log("Attempting to save voivodeship:", newVoivodeship);
       const saved = await saveUserData(user, "voivodeship", newVoivodeship);
       if (saved) {
         ctx.reply(
