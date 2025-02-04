@@ -35,7 +35,6 @@ const userSchema = new mongoose.Schema({
   },
   professions: { type: String },
   expectedSalary: { type: Number },
-  phone: { type: String },
   email: { type: String },
   checked: {
     type: String,

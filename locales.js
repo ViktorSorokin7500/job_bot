@@ -13,7 +13,7 @@ module.exports = {
     phoneQuestion: "Podaj swój numer telefonu:",
     photoQuestion: "Prześlij swoje zdjęcie:",
     profileDisplay:
-      "Twoja ankieta:\n\nZdjęcie:\n{{photo}}\nImię i nazwisko: {{fullName}}\nWiek: {{age}}\nPłeć: {{gender}}\nMiasto: {{city}}\nWojewództwo: {{voivodeship}}\nTelefon: {{phone}}\nE-mail: {{email}}\nZawody: {{professions}}\nOczekiwana pensja: {{salary}} zł\n\nAby zmienić/usunąć profil lub przejść do przeglądania ofert pracy i twoich zakładek - naciśnij przycisk menu.",
+      "Twoja ankieta:\n\nZdjęcie:\n{{photo}}\nImię i nazwisko: {{fullName}}\nWiek: {{age}}\nPłeć: {{gender}}\nMiasto: {{city}}\nWojewództwo: {{voivodeship}}\nTelefon: {{phone}}\nE-mail: {{email}}\nZawody: {{professions}}\nOczekiwana pensja: {{salary}} zł\n\nAby zmienić/usunąć profil lub przejść do przeglądania ofert pracy i twoich zakładek - naciśnij przycisk menu.\n👇👇👇",
     editProfile: "Co chcesz zmienić?",
     fullName: "Pełne imię",
     age: "Wiek",
@@ -58,6 +58,8 @@ module.exports = {
       "Błąd podczas aktualizacji województwa. Spróbuj ponownie.",
     errorUpdatingGender: "Błąd podczas aktualizacji płeć. Spróbuj ponownie.",
     genderUpdated: "Płeć zostało zaktualizowane na {{gender}}.",
+    responsibilities: "Obowiązki",
+    bonuses: "Bonusy",
   },
   ua: {
     chooseLanguage: "Оберіть мову:",
@@ -118,5 +120,7 @@ module.exports = {
       "Помилка під час оновлення воєводства. Спробуйте знову.",
     errorUpdatingGender: "Помилка під час оновлення стату.",
     genderUpdated: "Стать оновлена на {{gender}}.",
+    responsibilities: "Обов'язки",
+    bonuses: "Бонуси",
   },
 };

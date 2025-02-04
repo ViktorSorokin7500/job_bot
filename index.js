@@ -218,7 +218,7 @@ bot.action(/^apply-(.*)$/, async (ctx) => {
       try {
         await sendMail(
           `Zgłoszenie na ofertę pracy: ${job.name}`,
-          `Użytkownik ${user.fullName} jest zainteresowany ofertą pracy ${job.name}. Kontakt: Telefon: ${user.phone}, E-mail: ${user.email}.`
+          `Użytkownik ${user.fullName} jest zainteresowany ofertą pracy ${job.name}. Kontakt: TelegramId: ${user.telegramId}, Telefon: ${user.phone}, E-mail: ${user.email}.`
         );
         ctx.reply(t.appliedSuccess);
       } catch (error) {
@@ -655,7 +655,7 @@ bot.action(["setGender-male", "setGender-female"], async (ctx) => {
 
       if (ctx.session.editField === "gender") {
         ctx.reply(t.genderUpdated.replace("{{gender}}", newGender));
-        ctx.session.editField = null; // Сброс editField после успешной операции
+        ctx.session.editField = null;
         await displayProfile(ctx, user);
       } else {
         ctx.reply(t.errorUpdatingGender);
