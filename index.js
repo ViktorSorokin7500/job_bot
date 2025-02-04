@@ -31,6 +31,9 @@ const voivodeships = [
 ];
 
 async function saveUserData(user, field, value) {
+  if (field === "voivodeship") {
+    console.log("Trying to save voivodeship:", value);
+  }
   user[field] = value;
   try {
     await user.save();
