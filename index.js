@@ -155,13 +155,17 @@ function displayBookmark(ctx, user) {
   const t = locales[user.language];
   if (ctx.session.currentJobIndex < ctx.session.jobs.length) {
     const job = ctx.session.jobs[ctx.session.currentJobIndex];
-    let jobText = `*${job.name}*\n\n${job.description}\n\n${t.salary}: ${
-      job.salary
-    }\n${t.city}: ${job.city}\n${t.voivodeship}: ${job.voivodeship}\n${
-      t.responsibilities
-    }: ${job.responsibilities.join(", ")}\n${t.bonuses}: ${job.bonuses.join(
-      ", "
-    )}`;
+    let jobText = `*${escapeMarkdownV2(job.name)}*\n\n${escapeMarkdownV2(
+      job.description
+    )}\n\n${t.salary}: ${escapeMarkdownV2(job.salary.toString())}\n${
+      t.city
+    }: ${escapeMarkdownV2(job.city)}\n${t.voivodeship}: ${escapeMarkdownV2(
+      job.voivodeship
+    )}\n${t.responsibilities}: ${job.responsibilities
+      .map(escapeMarkdownV2)
+      .join(", ")}\n${t.bonuses}: ${job.bonuses
+      .map(escapeMarkdownV2)
+      .join(", ")}`;
     ctx.reply(jobText, {
       parse_mode: "MarkdownV2",
       reply_markup: {
@@ -181,18 +185,26 @@ function displayBookmark(ctx, user) {
   }
 }
 
+function escapeMarkdownV2(text) {
+  return text.replace(/[-_.!~>()#+]/g, "\\$&");
+}
+
 function displayJob(ctx, user) {
   if (!ctx.session) ctx.session = {};
   const t = locales[user.language];
   if (ctx.session.currentJobIndex < ctx.session.jobs.length) {
     const job = ctx.session.jobs[ctx.session.currentJobIndex];
-    let jobText = `*${job.name}*\n\n${job.description}\n\n${t.salary}: ${
-      job.salary
-    }\n${t.city}: ${job.city}\n${t.voivodeship}: ${job.voivodeship}\n${
-      t.responsibilities
-    }: ${job.responsibilities.join(", ")}\n${t.bonuses}: ${job.bonuses.join(
-      ", "
-    )}`;
+    let jobText = `*${escapeMarkdownV2(job.name)}*\n\n${escapeMarkdownV2(
+      job.description
+    )}\n\n${t.salary}: ${escapeMarkdownV2(job.salary.toString())}\n${
+      t.city
+    }: ${escapeMarkdownV2(job.city)}\n${t.voivodeship}: ${escapeMarkdownV2(
+      job.voivodeship
+    )}\n${t.responsibilities}: ${job.responsibilities
+      .map(escapeMarkdownV2)
+      .join(", ")}\n${t.bonuses}: ${job.bonuses
+      .map(escapeMarkdownV2)
+      .join(", ")}`;
     ctx.reply(jobText, {
       parse_mode: "MarkdownV2",
       reply_markup: {
