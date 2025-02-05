@@ -10,7 +10,7 @@ module.exports = {
       "Podaj nazwy poszukiwanych zawodów (oddzielone przecinkami):",
     salaryQuestion: "Jaką pensję oczekujesz (w złotych miesięcznie)?",
     emailQuestion: "Podaj swój adres e-mail (jeśli nie masz, napisz 'brak'):",
-    phoneQuestion: "Podaj swój numer telefonu:",
+    phoneQuestion: "Podaj swój numer telefonu (xxxxxxxxx):",
     photoQuestion: "Prześlij swoje zdjęcie:",
     profileDisplay:
       "Twoja ankieta:\n\nZdjęcie:\n{{photo}}\nImię i nazwisko: {{fullName}}\nWiek: {{age}}\nPłeć: {{gender}}\nMiasto: {{city}}\nWojewództwo: {{voivodeship}}\nTelefon: {{phone}}\nE-mail: {{email}}\nZawody: {{professions}}\nOczekiwana pensja: {{salary}} zł\n\nAby zmienić/usunąć profil lub przejść do przeglądania ofert pracy i twoich zakładek - naciśnij przycisk menu.\n👇👇👇",
@@ -73,7 +73,7 @@ module.exports = {
     salaryQuestion: "Яку зарплату ви очікуєте (в злотих на місяць)?",
     emailQuestion:
       "Введіть свою електронну пошту (якщо немає, напишіть 'brak'):",
-    phoneQuestion: "Введіть свій номер телефону:",
+    phoneQuestion: "Введіть свій номер телефону (xxxxxxxxx):",
     photoQuestion: "Надішліть своє фото:",
     profileDisplay:
       "Ваш профіль:\n\nФотографія:\n{{photo}}\nІм'я та прізвище: {{fullName}}\nВік: {{age}}\nСтать: {{gender}}\nМісто: {{city}}\nВоєводство: {{voivodeship}}\nТелефон: {{phone}}\nЕлектронна пошта: {{email}}\nПрофесії: {{professions}}\nОчікувана зарплата: {{salary}} zł\n\nЩоб змінити/видалити профіль або перейти до перегляду вакансій і ваших закладок - натисніть на кнопку меню.\n👇👇👇",
