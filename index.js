@@ -632,6 +632,7 @@ bot.action(voivodeships, async (ctx) => {
 });
 
 bot.on("photo", async (ctx) => {
+  console.log("Received photo message type:", ctx.message.type);
   const user = await User.findOne({ telegramId: ctx.from.id });
   if (user) {
     const t = locales[user.language];
@@ -655,6 +656,7 @@ bot.on("photo", async (ctx) => {
 });
 
 bot.on("message", async (ctx) => {
+  console.log("Received message type:", ctx.message.type);
   if (!ctx.session) ctx.session = {};
   const user = await User.findOne({ telegramId: ctx.from.id });
   if (user && !user.photo) {
