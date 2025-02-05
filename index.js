@@ -457,6 +457,7 @@ bot.on("text", async (ctx) => {
           });
         }
       } else {
+        ctx.reply(t.errorForm);
         ctx.reply(t.ageQuestion);
       }
     } else if (!user.voivodeship) {
@@ -490,6 +491,7 @@ bot.on("text", async (ctx) => {
           ctx.reply(t.emailQuestion);
         }
       } else {
+        ctx.reply(t.errorForm);
         ctx.reply(t.salaryQuestion);
       }
     } else if (!user.email) {
@@ -505,6 +507,7 @@ bot.on("text", async (ctx) => {
           ctx.reply(t.photoQuestion);
         }
       } else {
+        ctx.reply(t.errorForm);
         ctx.reply(t.phoneQuestion);
       }
     } else {
@@ -556,6 +559,16 @@ bot.action(["male", "female"], async (ctx) => {
     const saved = await saveUserData(user, "gender", ctx.match[0]);
     if (saved) {
       ctx.reply(t.ageQuestion);
+    } else {
+      ctx.reply(t.errorForm);
+      ctx.reply(t.genderQuestion, {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: t.male, callback_data: "male" }],
+            [{ text: t.female, callback_data: "female" }],
+          ],
+        },
+      });
     }
   }
 });
@@ -567,6 +580,12 @@ bot.action(voivodeships, async (ctx) => {
     const saved = await saveUserData(user, "voivodeship", ctx.match[0]);
     if (saved) {
       ctx.reply(t.cityQuestion);
+    } else {
+      ctx.reply(t.errorForm);
+      const keyboard = voivodeships.map((v) => [{ text: v, callback_data: v }]);
+      ctx.reply(t.voivodeshipQuestion, {
+        reply_markup: { inline_keyboard: keyboard },
+      });
     }
   }
 });
@@ -578,26 +597,20 @@ bot.on("photo", async (ctx) => {
     const photo = ctx.message.photo[ctx.message.photo.length - 1];
     const photoUrl = await getUpdatedPhotoUrl(photo.file_id, bot);
     if (photoUrl) {
-      if (!user.photo) {
+      if (!user.photo || ctx.session.editField === "photo") {
         const saved = await saveUserData(user, "photo", photoUrl);
         if (saved) {
-          await displayProfile(ctx, user);
-        }
-      } else if (ctx.session.editField === "photo") {
-        const saved = await saveUserData(user, "photo", photoUrl);
-        if (saved) {
-          ctx.session.editField = null;
           await displayProfile(ctx, user);
         }
       } else {
         ctx.reply(t.photoDownload);
       }
     } else {
+      ctx.reply(t.errorForm);
       ctx.reply(t.photoQuestion);
     }
   }
 });
-
 bot.action("editLanguage", async (ctx) => {
   const user = await User.findOne({ telegramId: ctx.from.id });
   if (user) {

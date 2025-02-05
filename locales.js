@@ -60,6 +60,7 @@ module.exports = {
     genderUpdated: "Płeć zostało zaktualizowane na {{gender}}.",
     responsibilities: "Obowiązki",
     bonuses: "Bonusy",
+    errorForm: "Błąd w formularzu, sproboj ponownie.",
   },
   ua: {
     chooseLanguage: "Оберіть мову:",
@@ -122,5 +123,6 @@ module.exports = {
     genderUpdated: "Стать оновлена на {{gender}}.",
     responsibilities: "Обов'язки",
     bonuses: "Бонуси",
+    errorForm: "Помилка в формі, спробуйте ще раз.",
   },
 };
