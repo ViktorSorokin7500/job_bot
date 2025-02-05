@@ -34,6 +34,9 @@ async function saveUserData(user, field, value) {
   if (field === "voivodeship") {
     console.log("Trying to save voivodeship:", value);
   }
+  if (field === "phone") {
+    value = value.replace(/[ -]/g, "");
+  }
   user[field] = value;
   try {
     await user.save();
@@ -495,9 +498,14 @@ bot.on("text", async (ctx) => {
         ctx.reply(t.phoneQuestion);
       }
     } else if (!user.phone) {
-      const saved = await saveUserData(user, "phone", ctx.message.text);
-      if (saved) {
-        ctx.reply(t.photoQuestion);
+      let cleanedPhone = ctx.message.text.replace(/[ -]/g, "");
+      if (/^\d+$/.test(cleanedPhone)) {
+        const saved = await saveUserData(user, "phone", cleanedPhone);
+        if (saved) {
+          ctx.reply(t.photoQuestion);
+        }
+      } else {
+        ctx.reply(t.phoneQuestion);
       }
     } else {
       if (ctx.session.editField) {
