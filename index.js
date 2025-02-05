@@ -440,7 +440,26 @@ bot.on("text", async (ctx) => {
         ctx.reply(t.nameQuestion);
       }
     } else if (!user.gender) {
-      ctx.reply("You shall no pass");
+      if (["male", "female"].includes(ctx.message.text.toLowerCase())) {
+        const saved = await saveUserData(
+          user,
+          "gender",
+          ctx.message.text.toLowerCase()
+        );
+        if (saved) {
+          ctx.reply(t.ageQuestion);
+        }
+      } else {
+        ctx.reply(t.errorForm);
+        ctx.reply(t.genderQuestion, {
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: t.male, callback_data: "male" }],
+              [{ text: t.female, callback_data: "female" }],
+            ],
+          },
+        });
+      }
     } else if (!user.age) {
       if (/^\d+$/.test(ctx.message.text)) {
         const saved = await saveUserData(
@@ -461,7 +480,20 @@ bot.on("text", async (ctx) => {
         ctx.reply(t.ageQuestion);
       }
     } else if (!user.voivodeship) {
-      ctx.reply("You shall no pass");
+      if (voivodeships.includes(ctx.message.text)) {
+        const saved = await saveUserData(user, "voivodeship", ctx.message.text);
+        if (saved) {
+          ctx.reply(t.cityQuestion);
+        }
+      } else {
+        ctx.reply(t.errorForm);
+        const keyboard = voivodeships.map((v) => [
+          { text: v, callback_data: v },
+        ]);
+        ctx.reply(t.voivodeshipQuestion, {
+          reply_markup: { inline_keyboard: keyboard },
+        });
+      }
     } else if (!user.city) {
       if (/^[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ\s]+$/.test(ctx.message.text)) {
         const saved = await saveUserData(user, "city", ctx.message.text);
@@ -611,6 +643,19 @@ bot.on("photo", async (ctx) => {
     }
   }
 });
+
+bot.on("message", async (ctx) => {
+  if (!ctx.session) ctx.session = {};
+  const user = await User.findOne({ telegramId: ctx.from.id });
+  if (user && !user.photo) {
+    const t = locales[user.language];
+    if (ctx.message.type !== "photo") {
+      ctx.reply(t.errorForm);
+      ctx.reply(t.photoQuestion);
+    }
+  }
+});
+
 bot.action("editLanguage", async (ctx) => {
   const user = await User.findOne({ telegramId: ctx.from.id });
   if (user) {
