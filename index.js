@@ -437,6 +437,8 @@ bot.on("text", async (ctx) => {
           });
         }
       } else {
+        ctx.reply(t.errorForm);
+        await new Promise((resolve) => setTimeout(resolve, 100));
         ctx.reply(t.nameQuestion);
       }
     } else if (!user.gender) {
@@ -451,6 +453,7 @@ bot.on("text", async (ctx) => {
         }
       } else {
         ctx.reply(t.errorForm);
+        await new Promise((resolve) => setTimeout(resolve, 100));
         ctx.reply(t.genderQuestion, {
           reply_markup: {
             inline_keyboard: [
@@ -477,6 +480,7 @@ bot.on("text", async (ctx) => {
         }
       } else {
         ctx.reply(t.errorForm);
+        await new Promise((resolve) => setTimeout(resolve, 100));
         ctx.reply(t.ageQuestion);
       }
     } else if (!user.voivodeship) {
@@ -487,6 +491,7 @@ bot.on("text", async (ctx) => {
         }
       } else {
         ctx.reply(t.errorForm);
+        await new Promise((resolve) => setTimeout(resolve, 100));
         const keyboard = voivodeships.map((v) => [
           { text: v, callback_data: v },
         ]);
@@ -501,6 +506,8 @@ bot.on("text", async (ctx) => {
           ctx.reply(t.professionsQuestion);
         }
       } else {
+        ctx.reply(t.errorForm);
+        await new Promise((resolve) => setTimeout(resolve, 100));
         ctx.reply(t.cityQuestion);
       }
     } else if (!user.professions) {
@@ -524,6 +531,7 @@ bot.on("text", async (ctx) => {
         }
       } else {
         ctx.reply(t.errorForm);
+        await new Promise((resolve) => setTimeout(resolve, 100));
         ctx.reply(t.salaryQuestion);
       }
     } else if (!user.email) {
@@ -540,6 +548,7 @@ bot.on("text", async (ctx) => {
         }
       } else {
         ctx.reply(t.errorForm);
+        await new Promise((resolve) => setTimeout(resolve, 100));
         ctx.reply(t.phoneQuestion);
       }
     } else {
@@ -639,6 +648,7 @@ bot.on("photo", async (ctx) => {
       }
     } else {
       ctx.reply(t.errorForm);
+      await new Promise((resolve) => setTimeout(resolve, 100));
       ctx.reply(t.photoQuestion);
     }
   }
